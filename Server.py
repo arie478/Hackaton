@@ -12,8 +12,14 @@ def broadcast_offering(offer_message):
         # Broadcast offer every 1 second
         udp_server_socket.sendto(offer_message, ("localhost", broadcast_port))
         # print(offer_message, flush=True)
-        # print("Offer sent in broadcast!", flush=True)
+        print("Offer sent in broadcast!", flush=True)
         time.sleep(1)
+
+
+def ask_for_name(client_socket, client_num):
+    name = client_socket.recv(1024).decode()
+    print(name)
+    names_from_teams.put((client_num, name))
 
 
 def call_draw():
@@ -27,7 +33,9 @@ def playing_with_player(client_socket, player_number):
 
 # Server settings
 # localhost
-server_ip = socket.gethostbyname(socket.getfqdn())  # alternative: socket.gethostbyname(socket.gethostname()) #local
+#server_ip = socket.gethostbyname(socket.getfqdn())
+# alternative: socket.gethostbyname(socket.gethostname()) #local
+server_ip = socket.gethostbyname(socket.gethostname())
 # host / "127.0.0.1"
 local_port = 2017
 broadcast_port = 13117
@@ -36,7 +44,7 @@ broadcast_port = 13117
 udp_server_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
 
 # Not sure if needed, enable to be re-used?
-# udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Enable broadcasting mode
 udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -46,12 +54,15 @@ tcp_server_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM
 
 # Bind to address and ip
 # udp_server_socket.bind((server_ip, server_port))
-tcp_server_socket.bind((server_ip, local_port))
+print("server IP:", server_ip)
+print("server local port:", local_port)
+tcp_server_socket.bind(('', local_port))
 
 # Set a timeout so the socket does not block
 # indefinitely when trying to receive data.
-udp_server_socket.settimeout(0.2)
 
+# udp_server_socket.settimeout(0.2)
+#
 waiting_for_clients = True
 
 # Make the offer message
@@ -69,23 +80,42 @@ print("“Server started, listening on IP address " + server_ip)
 client_count = 0
 # client_count_lock = threading.Lock()
 
-# threading.Thread(target=broadcast_offering, args=(magic_cookie_message_type_server_port_packed,)).start()
+threading.Thread(target=broadcast_offering, args=(magic_cookie_message_type_server_port_packed,)).start()
 
-client_ip_address = []
-client_sockets = []
-client_names = ["Instinct", "Rocket"]
+client_ip_addresses = [None]*2
+client_sockets = [None]*2
+client_names = [None]*2
+names_from_teams = queue.Queue()
+tcp_server_socket.listen()
+while client_count<2:
+    print("Waiting for request..")
 
-# while waiting_for_clients:
-#     print("Waiting for request..")
-#     tcp_server_socket.listen()
-#     client_sockets[client_count], client_ip_address[client_count] = tcp_server_socket.accept()
-#     client_sockets[client_count].settimeout(0.2)
-#     # Update the client counter
-#     # client_count_lock.acquire()
-#     client_count += 1
-#     if client_count == 2:
-#         waiting_for_clients = False
-#     # client_count_lock.release()
+    client_sockets[client_count], client_ip_addresses[client_count] = tcp_server_socket.accept()
+    print(client_sockets[client_count])
+    print("request eccepted")
+    threading.Thread(target = ask_for_name, args = (client_sockets[client_count], client_count)).start()
+    print("name asked")
+    #client_sockets[client_count].settimeout(0.2)
+    # Update the client counter
+    # client_count_lock.acquire()
+    client_count += 1
+    # client_count_lock.release()
+
+# Broadcast has stopped and no need for welcoming socket anymore:
+waiting_for_clients = False
+udp_server_socket.close()
+tcp_server_socket.close()
+
+print("got two players, asking for names:")
+
+(first_client_num, first_team_name) = names_from_teams.get(block = True, timeout = None)
+(second_client_num, second_team_name) = names_from_teams.get(block = True, timeout = None)
+client_names[first_client_num], client_names[second_client_num] = first_team_name, second_team_name
+time.sleep(10)
+
+print("game_started")
+
+
 
 # Now we have 2 clients! We are ready to start the game
 
@@ -113,29 +143,41 @@ elif operator_chosen == '*':
 
 else:  # operator_chosen == '/':
     #print("div")
+    #divisor
     divisors = {9: [9, 3, 1], 8: [8, 4, 2, 1], 7: [7, 1], 6: [6, 3, 2, 1], 5: [5, 1], 4: [4, 2, 1], 3: [3, 1],
                 2: [2, 1], 1: [1], 0: [9, 8, 7, 6, 5, 4, 3, 2, 1]}
     second_number = random.choice(divisors[first_number])
 
 true_answer = operator_type.get(operator_chosen)(first_number, second_number)
 
-print("Welcome to Quick Maths.")
-print("Player 1: " + client_names[0])
-print("Player 2: " + client_names[1])
-print("==")
-print("Please answer the following question as fast as you can:")
-print('How much is {}{}{}?'.format(first_number, operator_chosen, second_number))
-print(int(true_answer))
+game_begin_message_from_server = f"Whlcome to Quick Maths.\n" \
+                                 f"Player 1: {client_names[0]}" \
+                                 f"Player 2: {client_names[1]}" \
+                                 f"==\n" \
+                                 f"Please answer the following question as fast as you can:\n" \
+                                 f"How much is {first_number}{operator_chosen}{second_number}?".encode()
+client_sockets[0].send(game_begin_message_from_server)
+client_sockets[1].send(game_begin_message_from_server)
 
-exit(0)
 
-answer_queue = queue.Queue
+# print("Welcome to Quick Maths.")
+# print("Player 1: " + client_names[0])
+# print("Player 2: " + client_names[1])
+# print("==")
+# print("Please answer the following question as fast as you can:")
+# print('How much is {}{}{}?'.format(first_number, operator_chosen, second_number))
+# print(int(true_answer))
+
+#exit(0)
+
+answer_queue = queue.Queue()
 
 # Make the 2 player threads and the draw thread
 timer = threading.Timer(10, call_draw)
+print("before threads")
 player_0 = threading.Thread(target=playing_with_player, args=(client_sockets[0], 0))
 player_1 = threading.Thread(target=playing_with_player, args=(client_sockets[1], 1))
-
+print("after threads")
 # Set all threads to daemons
 player_0.daemon = True
 player_1.daemon = True
@@ -164,13 +206,33 @@ if player_num == 1 and answer != answer:
 # if player_num == 1, player 1 won
 # if player_num == -1, draw since time run out
 
-print("Game over!")
-print("The correct answer was " + answer + "!")
+# Construct the 'END GAME' message:
+
+game_over_message = f"Game Over!\n" \
+                    f"The correct answer was {true_answer}!\n"
 if player_num == 0:
-    print("Congratulations to the winner: " + client_names[0])
-if player_num == 1:
-    print("Congratulations to the winner: " + client_names[1])
-if player_num == -1:
-    print("It is a draw since no one gave an answer within the time limit!")
+    game_over_message+= f"Congratulations to the winner: {client_names[0]}"
+elif player_num==1:
+    game_over_message+=f"Congratulations to the winner: {client_names[1]}"
+elif player_num == -1:
+    game_over_message+="It is a draw since no one gave an answer within the time limit!"
+
+# server sends the 'END GAME' message two the two players:
+client_sockets[0].send(game_begin_message_from_server)
+client_sockets[1].send(game_begin_message_from_server)
+
+client_sockets[0].close()
+client_sockets[1].close()
+
+print("Game over, sending out offer requests...")
+
+# print("Game over!")
+# print("The correct answer was " + true_answer + "!")
+# if player_num == 0:
+#     print("Congratulations to the winner: " + client_names[0])
+# if player_num == 1:
+#     print("Congratulations to the winner: " + client_names[1])
+# if player_num == -1:
+#     print("It is a draw since no one gave an answer within the time limit!")
 
 # Reset the game and loop again

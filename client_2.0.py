@@ -1,7 +1,7 @@
 import socket
 import struct
 # Client settings
-group_name = "Arie_Adam"
+group_name = "Team 2"
 broadcast_port = 13117
 bufferSize = 1024
 
