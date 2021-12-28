@@ -23,7 +23,7 @@ def ask_for_name(client_socket, client_num):
 
 
 def call_draw():
-    answer_queue.put((-1, 0))
+    answer_queue.put((-1, str(0).encode()))
 
 
 def playing_with_player(client_socket, player_number):
@@ -109,8 +109,14 @@ tcp_server_socket.close()
 print("got two players, asking for names:")
 
 (first_client_num, first_team_name) = names_from_teams.get(block = True, timeout = None)
+print("Got player 0 :")
+print((first_client_num, first_team_name))
 (second_client_num, second_team_name) = names_from_teams.get(block = True, timeout = None)
+print("Got player 1 :")
+print((second_client_num, second_team_name))
 client_names[first_client_num], client_names[second_client_num] = first_team_name, second_team_name
+print(client_names[0])
+print(client_names[1])
 time.sleep(10)
 
 print("game_started")
@@ -174,10 +180,8 @@ answer_queue = queue.Queue()
 
 # Make the 2 player threads and the draw thread
 timer = threading.Timer(10, call_draw)
-print("before threads")
 player_0 = threading.Thread(target=playing_with_player, args=(client_sockets[0], 0))
 player_1 = threading.Thread(target=playing_with_player, args=(client_sockets[1], 1))
-print("after threads")
 # Set all threads to daemons
 player_0.daemon = True
 player_1.daemon = True
@@ -190,15 +194,22 @@ timer.start()
 
 # Get the answer from the queue
 player_num_and_answer = answer_queue.get(block=True, timeout=None)
+print("Got from queue :")
+print(player_num_and_answer)
+
 timer.cancel()
 
 player_num = player_num_and_answer[0]
-answer = player_num_and_answer[1]
+print(player_num)
+print(client_names[player_num])
+answer = player_num_and_answer[1].decode()
+print(answer)
+print("True answer: " + str(true_answer))
 
 # Check if answer is right or wrong and change winner
-if player_num == 0 and answer != answer:
+if player_num == 0 and answer != true_answer:
     player_num = 1
-if player_num == 1 and answer != answer:
+if player_num == 1 and answer != true_answer:
     player_num = 0
 
 # Game over, check for winner
@@ -218,14 +229,15 @@ elif player_num == -1:
     game_over_message+="It is a draw since no one gave an answer within the time limit!"
 
 # server sends the 'END GAME' message two the two players:
-client_sockets[0].send(game_begin_message_from_server)
-client_sockets[1].send(game_begin_message_from_server)
+client_sockets[0].send(game_over_message.encode())
+client_sockets[1].send(game_over_message.encode())
 
 client_sockets[0].close()
 client_sockets[1].close()
 
 print("Game over, sending out offer requests...")
 
+exit(0)
 # print("Game over!")
 # print("The correct answer was " + true_answer + "!")
 # if player_num == 0:

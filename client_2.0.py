@@ -39,7 +39,27 @@ start_game_message_from_server = clientSocket.recv(1024).decode()
 
 print(start_game_message_from_server)
 
+# print("Waiting for answer: ")
+try:
+    import getch
 
+    player_answer = getch.getch()
+except ImportError:
+    import msvcrt
+
+    player_answer = msvcrt.getch()
+
+print(player_answer.decode())
+
+player_answer = msvcrt.getch()  # getch.getch()
+# print(player_answer)
+
+clientSocket.send(player_answer)
+
+# Finish playing the game
+
+end_game_message_from_server = clientSocket.recv(1024).decode()
+print(end_game_message_from_server)
 
 
 # looking_for_a_server = True
