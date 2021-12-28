@@ -5,8 +5,6 @@ import socket
 import struct
 import time
 import threading
-import selectors
-import types
 
 
 def broadcast_offering(offer_message):
@@ -198,7 +196,7 @@ while True:
         player_1.start()
         timer.start()
 
-        time_out = time.time() + 10
+        # time_out = time.time() + 10
 
         # Get the answer from the queue
         player_num_and_answer = answer_queue.get(block=True, timeout=None)
@@ -239,8 +237,8 @@ while True:
         elif player_num == -1:
             game_over_message += "It is a draw since no one gave an answer within the time limit!"
 
-        while time.time() < time_out:
-            continue
+        # while time.time() < time_out:
+        #    continue
 
         # server sends the 'END GAME' message two the two players:
         client_sockets[0].send(game_over_message.encode())
@@ -251,7 +249,6 @@ while True:
 
         print("Game over, sending out offer requests...")
 
-        exit(0)
         # print("Game over!")
         # print("The correct answer was " + true_answer + "!")
         # if player_num == 0:
