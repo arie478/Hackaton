@@ -9,7 +9,7 @@ class myThread (multiprocessing.Process):
     def __init__(self, clientSocket):
         super(myThread, self).__init__()
 
-        print("Waiting for answer: ")
+        print("Waiting for answer input: ")
         try:
             import getch
 
@@ -20,91 +20,75 @@ class myThread (multiprocessing.Process):
             player_answer = msvcrt.getch()
 
         print(player_answer.decode())
-
-        print(player_answer)
         clientSocket.send(player_answer)
         print("Answer sent!")
 
+while True:
+    try :
+        # Client settings
+        broadcast_port = 13117
+        bufferSize = 1024
 
-def playing_game(clientSocket):
-    print("Waiting for answer: ")
-    try:
-        import getch
+        # Create a UDP socket at client side
+        udp_client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
 
-        player_answer = getch.getch()
-    except ImportError:
-        import msvcrt
+        # Enable to be re-used
+        udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        player_answer = msvcrt.getch()
+        # Enable broadcasting mode
+        udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-    print(player_answer.decode())
+        # Connect to the broadcasting port
+        udp_client_socket.bind(("", broadcast_port))
+        print("Client started, listening for offer requests...")
 
-    # print(player_answer)
-    clientSocket.send(player_answer)
+        offer_message, offer_address = udp_client_socket.recvfrom(bufferSize)
+        udp_client_socket.close()
 
+        # Check if the packet is in the proper format :
+        # Magic cookie [0:4] = 0xabcddcba
+        # m_type [4] = 0x2
+        # if not (offer_message[:4] == bytes([0xab, 0xcd, 0xdc, 0xba])) or not (offer_message[4] == 0x2):
+        #     exit(0)
+        #     # Not an offer message, drop and try again
+        #     # continue
 
-if __name__ != '__Client__':
-    # Client settings
-    broadcast_port = 13117
-    bufferSize = 1024
+        offer_ip = offer_address[0]
 
-    # Create a UDP socket at client side
-    udp_client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
+        print(f"Received offer from {offer_ip}, attempting to connect...")
 
-    # Enable to be re-used
-    udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        offer_port = struct.unpack('>H', offer_message[5:7])[0]
 
-    # Enable broadcasting mode
-    udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        print(f"{offer_ip}, {offer_port}")
 
-    # Connect to the broadcasting port
-    udp_client_socket.bind(("", broadcast_port))
-    print("Client started, listening for offer requests...")
+        # TCP Client Side:
+        group_name = "Main_Client>"
+        clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        clientSocket.connect((offer_ip, offer_port))
 
-    offer_message, offer_address = udp_client_socket.recvfrom(bufferSize)
-    # udp_client_socket.close()
+        clientSocket.send(f"{group_name}\n".encode())
 
-    # Check if the packet is in the proper format :
-    # Magic cookie [0:4] = 0xabcddcba
-    # m_type [4] = 0x2
-    # if not (offer_message[:4] == bytes([0xab, 0xcd, 0xdc, 0xba])) or not (offer_message[4] == 0x2):
-    #     exit(0)
-    #     # Not an offer message, drop and try again
-    #     # continue
+        start_game_message_from_server = clientSocket.recv(1024).decode()
 
-    offer_ip = offer_address[0]
+        print(start_game_message_from_server)
 
-    print(f"Received offer from {offer_ip}, attempting to connect...")
+        time_out = time.time() + 10
 
-    offer_port = struct.unpack('>H', offer_message[5:7])[0]
+        # Play the game
 
-    print(f"{offer_ip}, {offer_port}")
+        #playing_game_process = Process(target=playing_game, args=(clientSocket,))
+        #playing_game_process.start()
 
-    # TCP Client Side:
-    group_name = "Arie_Adam"
-    clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    clientSocket.connect((offer_ip, offer_port))
+        playing_game_process = myThread(clientSocket)
+        playing_game_process.start()
 
-    clientSocket.send(f"{group_name}\n".encode())
+        # Finish playing the game
 
-    start_game_message_from_server = clientSocket.recv(1024).decode()
+        end_game_message_from_server = clientSocket.recv(1024).decode()
 
-    print(start_game_message_from_server)
+        playing_game_process.kill()
 
-    time_out = time.time() + 10
+        print(end_game_message_from_server)
 
-    # Play the game
-
-    #playing_game_process = Process(target=playing_game, args=(clientSocket,))
-    #playing_game_process.start()
-
-    playing_game_process = myThread(clientSocket)
-    playing_game_process.start()
-
-    # Finish playing the game
-
-    end_game_message_from_server = clientSocket.recv(1024).decode()
-
-    playing_game_process.kill()
-
-    print(end_game_message_from_server)
+    except:
+        continue
