@@ -103,7 +103,7 @@ def main():
                 print(f"{offer_ip}, {offer_port}")
 
                 # TCP Client Side:
-                group_name = "Main_Client>"
+                group_name = "Client2>"
                 clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 clientSocket.connect((offer_ip, offer_port))
 
