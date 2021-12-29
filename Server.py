@@ -5,7 +5,7 @@ import socket
 import struct
 import time
 import threading
-import scapy.all as scapy
+#import scapy.all as scapy
 
 # function called in by thread, broadcasts the message it got to all the Ip addresses in the port
 def broadcast_offering(offer_message):
@@ -85,7 +85,7 @@ while True:
         # I = unsigned long(4) b = unsigned char(1) H = unsigned int(2)
         magic_cookie_message_type_server_port_packed = struct.pack('!IbH', int('0xabcddcba', 16), int('0x2', 16), local_port)
 
-        print("“Server started, listening on IP address " + server_ip)
+        print("\x1b[6;30;42m" + "Server started, listening on IP address " + server_ip + '\x1b[0m')
 
         client_count = 0
 
@@ -103,9 +103,7 @@ while True:
 
         # While we don't have 2 clients, wait to accept cliens
         while client_count < 2:
-            print("Waiting for request..")
             client_sockets[client_count], client_ip_addresses[client_count] = tcp_server_socket.accept()
-            print("request eccepted")
             ask_name = threading.Thread(name="name_asker_thread", target=ask_for_name,
                                         args=(client_sockets[client_count], client_count))
             ask_name.start()
@@ -116,20 +114,20 @@ while True:
         waiting_for_clients = False
         tcp_server_socket.close()
 
-        print("got two players, asking for names:")
+        ###print("got two players, asking for names:")
 
         (first_client_num, first_team_name) = names_from_teams.get(block=True, timeout=None)
-        print("Got player 0 :")
-        print((first_client_num, first_team_name))
+        ###print("Got player 0 :")
+        ###print((first_client_num, first_team_name))
         (second_client_num, second_team_name) = names_from_teams.get(block=True, timeout=None)
-        print("Got player 1 :")
-        print((second_client_num, second_team_name))
+        ####print("Got player 1 :")
+        ####print((second_client_num, second_team_name))
         client_names[first_client_num], client_names[second_client_num] = first_team_name, second_team_name
 
         # Now we have 2 clients! We are ready to start the game in 10 seconds
         time.sleep(10)
 
-        print("game_started")
+        ####print("game_started")
 
 
         # The equation generator
@@ -225,7 +223,7 @@ while True:
         elif player_num == -1:
             game_over_message += "It is a draw since no one gave an answer within the time limit!"
 
-        print(game_over_message)
+        print("\x1b[6;30;44m" + game_over_message + '\x1b[0m')
         # server sends the 'END GAME' message two the two players:
         client_sockets[0].send(game_over_message.encode())
         client_sockets[1].send(game_over_message.encode())
@@ -234,7 +232,7 @@ while True:
         client_sockets[1].close()
 
         # Reset the game and loop again
-        print("Game over, sending out offer requests...")
+        print("\x1b[5;30;41m" + "Game over, sending out offer requests..." + "\x1b[0m")
 
     except BaseException as err:
         print(err)

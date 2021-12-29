@@ -8,7 +8,8 @@ from multiprocessing import Process
 from select import select
 
 
-class MyThread (multiprocessing.Process):
+
+class MyThread(multiprocessing.Process):
     def __init__(self, client_socket):
         super(MyThread, self).__init__()
         self.playing_socket = client_socket
@@ -30,25 +31,26 @@ class MyThread (multiprocessing.Process):
             import msvcrt
 
             player_answer = msvcrt.getch()
-            #print(player_answer.decode())
+            # print(player_answer.decode())
             try:
                 self.playing_socket.send(player_answer)
             except BaseException as err:
                 print(err)
                 pass
-            #print("Answer sent!")
+            # print("Answer sent!")
 
 
 def main():
     try:
         while True:
-            try :
+            try:
                 # Client settings
                 broadcast_port = 13117
                 bufferSize = 1024
 
                 # Create a UDP socket at client side
-                udp_client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
+                udp_client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM,
+                                                  proto=socket.IPPROTO_UDP)
 
                 # Enable to be re-used
                 udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -63,11 +65,11 @@ def main():
                 offer_message, offer_address = udp_client_socket.recvfrom(bufferSize)
                 udp_client_socket.close()
 
-                magic, message, port = struct.unpack('!IbH', offer_message)
-                print(magic, message, port)
+                #### magic, message, port = struct.unpack('!IbH', offer_message)
+                #### print(magic, message, port)
                 # Check if the packet is in the proper format :
                 if not (offer_message[:4] == bytes([0xab, 0xcd, 0xdc, 0xba])) or not (offer_message[4] == 0x2):
-                    print("invalid format")
+                    ###print("invalid format")
                     # Not an offer message, drop and try again
                     continue
 
@@ -84,7 +86,7 @@ def main():
 
                 clientSocket.send(f"{group_name}\n".encode())
 
-                print("Connected, waiting for game to start")
+                ####print("Connected, waiting for game to start")
                 start_game_message_from_server = clientSocket.recv(1024).decode()
 
                 print(start_game_message_from_server)
@@ -106,6 +108,7 @@ def main():
             playing_game_process.kill()
 
             print(end_game_message_from_server)
+            print("Server disconnected, listening for offer requests...")
     except BaseException as err:
         pass
         print(err)
