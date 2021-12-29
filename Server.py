@@ -19,7 +19,7 @@ def broadcast_offering(offer_message):
         udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
         udp_server_socket.sendto(offer_message, ("localhost", broadcast_port))
-        print("Offer sent in broadcast!", flush=True)
+        #print("Offer sent in broadcast!", flush=True)
         udp_server_socket.close()
         # Broadcast offer every 1 second
         time.sleep(1)
@@ -27,7 +27,7 @@ def broadcast_offering(offer_message):
 
 def ask_for_name(client_socket, client_num):
     name = client_socket.recv(1024).decode()
-    print(name)
+    #print(name)
     names_from_teams.put((client_num, name))
 
 
@@ -56,8 +56,8 @@ while True:
 
         # Bind to address and ip
         # udp_server_socket.bind((server_ip, server_port))
-        print("server IP:", server_ip)
-        print("server local port:", local_port)
+        #print("server IP:", server_ip)
+        #print("server local port:", local_port)
         tcp_server_socket.bind(('', local_port))
 
         # Set a timeout so the socket does not block
@@ -91,16 +91,16 @@ while True:
         names_from_teams = queue.Queue()
         tcp_server_socket.listen()
         while client_count < 2:
-            print("Waiting for request..")
+            #print("Waiting for request..")
 
             client_sockets[client_count], client_ip_addresses[client_count] = tcp_server_socket.accept()
-            print(client_sockets[client_count])
-            print("request eccepted")
+            #print(client_sockets[client_count])
+            #print("request eccepted")
             ask_name = threading.Thread(name="name_asker_thread", target=ask_for_name,
                                         args=(client_sockets[client_count], client_count))
             ask_name.start()
             ask_name.join()
-            print("name asked")
+            #print("name asked")
             # client_sockets[client_count].settimeout(0.2)
             # Update the client counter
             # client_count_lock.acquire()
@@ -111,20 +111,20 @@ while True:
         waiting_for_clients = False
         tcp_server_socket.close()
 
-        print("got two players, asking for names:")
+        #print("got two players, asking for names:")
 
         (first_client_num, first_team_name) = names_from_teams.get(block=True, timeout=None)
-        print("Got player 0 :")
-        print((first_client_num, first_team_name))
+        #print("Got player 0 :")
+        #print((first_client_num, first_team_name))
         (second_client_num, second_team_name) = names_from_teams.get(block=True, timeout=None)
-        print("Got player 1 :")
-        print((second_client_num, second_team_name))
+        #print("Got player 1 :")
+        #print((second_client_num, second_team_name))
         client_names[first_client_num], client_names[second_client_num] = first_team_name, second_team_name
-        print(client_names[0])
-        print(client_names[1])
+        #print(client_names[0])
+        #print(client_names[1])
         time.sleep(10)
 
-        print("game_started")
+        #print("game_started")
 
         # Now we have 2 clients! We are ready to start the game
 
@@ -201,24 +201,24 @@ while True:
         # Get the answer from the queue
         player_num_and_answer = answer_queue.get(block=True, timeout=None)
 
-        print("Got from queue :")
-        print(player_num_and_answer)
+        #print("Got from queue :")
+        #print(player_num_and_answer)
 
         timer.cancel()
 
         player_num = player_num_and_answer[0]
-        print(player_num)
-        print(client_names[player_num])
+        #print(player_num)
+        #print(client_names[player_num])
         answer = int(player_num_and_answer[1].decode())
-        print(answer)
-        print("True answer: " + str(true_answer))
+        #print(answer)
+        #print("True answer: " + str(true_answer))
 
         # Check if answer is right or wrong and change winner
         if player_num == 0 and answer != true_answer:
-            print("Play 0 did wrong, 1 is winner")
+            #print("Play 0 did wrong, 1 is winner")
             player_num = 1
         if player_num == 1 and answer != true_answer:
-            print("Play 1 did wrong, 0 is winner")
+            #print("Play 1 did wrong, 0 is winner")
             player_num = 0
 
         # Game over, check for winner

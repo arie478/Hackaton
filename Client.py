@@ -19,22 +19,22 @@ class MyThread (multiprocessing.Process):
         self.playing_socket = client_socket
 
     def run(self):
-        print("Waiting for answer: ")
+        #print("Waiting for answer: ")
         try:
             import getch
 
             player_answer = getch.getch()
-            print(player_answer.decode())
+            #print(player_answer.decode())
             self.playing_socket.send(player_answer)
-            print("Answer sent!")
+            #print("Answer sent!")
 
         except ImportError:
             import msvcrt
 
             player_answer = msvcrt.getch()
-            print(player_answer.decode())
+            #print(player_answer.decode())
             self.playing_socket.send(player_answer)
-            print("Answer sent!")
+            #print("Answer sent!")
 
 
 # def playing_game(client_socket):
@@ -89,7 +89,7 @@ def main():
 
                 # Check if the packet is in the proper format :
                 if not (offer_message[:4] == bytes([0xab, 0xcd, 0xdc, 0xba])) or not (offer_message[4] == 0x2):
-                    print("invalid format")
+                    #print("invalid format")
                     # Not an offer message, drop and try again
                     continue
 
@@ -99,10 +99,10 @@ def main():
 
                 offer_port = struct.unpack('>H', offer_message[5:7])[0]
 
-                print(f"{offer_ip}, {offer_port}")
+                #print(f"{offer_ip}, {offer_port}")
 
                 # TCP Client Side:
-                group_name = "Main_Client>"
+                group_name = "Testy the test client"
                 clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 clientSocket.connect((offer_ip, offer_port))
 
@@ -125,7 +125,8 @@ def main():
 
             # Finish playing the game
             except BaseException as err:
-                print(err)
+                pass
+                #print(err)
 
             end_game_message_from_server = clientSocket.recv(1024).decode()
 
@@ -135,7 +136,8 @@ def main():
 
             print(end_game_message_from_server)
     except BaseException as err:
-        print(err)
+        pass
+        #print(err)
 
 
 if __name__ == '__main__':
