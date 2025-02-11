@@ -24,7 +24,7 @@ This project was done for a Web Development Environments course for educational 
 
 ---
 
-## 🛠 How to Run
+##  How to Run
 
 ### **Server Setup:**
 1. Ensure the `scapy` library is installed (Linux recommended).
